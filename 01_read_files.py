@@ -30,12 +30,3 @@ df = df.rename({'Title': 'Full Title'}, axis=1)
 df.to_pickle(directory + 'clean_data/show_data.pkl')
 
 
-
-s = pd.DataFrame([pd.Series(x)for x in df_show_actors['Actors']]).stack().reset_index(level = 1, drop = True) 
-
-s.name = 'Actor'
-
-df_actors_complete = df_show_actors.join(s, how =  'right' ).drop('Actors', axis = 1).reset_index(drop = True)
-
-df_actors_complete.to_pickle(directory + '/show_actors_stack_full.pkl')
-
