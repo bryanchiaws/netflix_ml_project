@@ -25,6 +25,15 @@ with open(directory + "show_tags_stack_full.pkl", "rb") as f:
     
 genre_dummies = pd.get_dummies(genres, prefix = 'Genre', columns = ['Genres']).groupby('Title').sum()
 
+#Just use most popular tags (>=4 shows)
+
+df_sum_tags = tags.groupby('Tag').agg(
+    count = ('Tag', 'count'),
+    shows = ('Title', lambda x : ', '.join(x))
+    ).reset_index()
+
+tags = tags[tags['Tag'].isin(df_sum_tags[df_sum_tags['count']>=1]['Tag'])]
+
 tag_dummies = pd.get_dummies(tags, prefix = 'Tag', columns = ['Tag']).groupby('Title').sum()
 
 ml_dataset = pd.merge(pd.merge(retention_metrics, genre_dummies, how = "left", left_on = 'Title', right_on = 'Title'),\
