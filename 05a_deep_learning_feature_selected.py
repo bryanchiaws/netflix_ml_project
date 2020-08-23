@@ -13,6 +13,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import numpy as np
+from tensorflow.keras import regularizers
 
 directory = '/Users/bryanchia/Desktop/projects/netflix_ml_project/clean_data/'
 
@@ -35,17 +36,22 @@ X_train, X_test, Y_train, Y_test = \
 
 model = Sequential()
 
-model.add(Dense(24,
+model.add(Dense(80,
                 input_shape = (188,),
                 activation = 'relu',
-                kernel_initializer = 'RandomNormal')
+                kernel_initializer = 'RandomNormal',
+                activity_regularizer = regularizers.l2(1e-4))
           )
 
-model.add(Dense(12,
-                activation = 'relu',
-                kernel_initializer = 'RandomNormal'))
+model.add(Dropout(0.2))
 
-model.add(Dropout(0.5))
+model.add(Dense(80,
+                activation = 'relu',
+                kernel_initializer = 'RandomNormal',
+                activity_regularizer = regularizers.l2(1e-6))
+          )
+
+model.add(Dropout(0.2))
 
 model.add(Dense(1,
                 activation = 'sigmoid'))
@@ -71,7 +77,8 @@ from keras import callbacks
 
 earlystopping = callbacks.EarlyStopping(monitor ="val_loss",  
                                         mode ="min", patience = 30,
-                                        restore_best_weights = True) 
+                                        restore_best_weights = True,
+                                        verbose = 1) 
 
 history = model.fit(X_train, Y_train, validation_data = [X_test, Y_test], epochs = 200, batch_size = 32,\
                     callbacks =[earlystopping, LearningRateScheduler(lr_scheduler, verbose=1)])
@@ -112,4 +119,7 @@ Y_predictions = pd.merge(pd.merge(pd.merge(ml_vars[['Title', 'Season']], Y_test,
 #Build the confusion matrix
 from sklearn.metrics import confusion_matrix
 cm= confusion_matrix(Y_test, Y_predict)
+
+p = cm[0,0]/(cm[0,0] + cm[0, 1])
+r = cm[0,0]/(cm[0,0] + cm[1, 0])
 
