@@ -14,6 +14,8 @@ import numpy as np
 from sklearn.model_selection import GridSearchCV
 from itertools import product
 from sklearn.metrics import confusion_matrix
+import random
+from sklearn.utils import shuffle
 
 
 directory = '/Users/bryanchia/Desktop/projects/netflix_ml_project/clean_data/'
@@ -84,8 +86,6 @@ def train_model(X, Y):
     train_acc_vec = []
     test_loss_vec = []
     test_acc_vec = []
-    pvec = []
-    #rvec = []
     
     for i in range (0, 10):
         
@@ -93,16 +93,10 @@ def train_model(X, Y):
         
         
         model.fit(X_train, Y_train, validation_data = [X_test, Y_test], epochs = 200, batch_size = 32,\
-                    callbacks =[earlystopping, LearningRateScheduler(lr_scheduler, verbose=1)])
+                    callbacks =[earlystopping, LearningRateScheduler(lr_scheduler, verbose=0)])
             
         train = model.evaluate(X_train, Y_train)
         test = model.evaluate(X_test, Y_test)
-        
-        Y_predict = model.predict_classes(X_test)
-        #cm = confusion_matrix(Y_test, Y_predict)
-
-        #pvec.append(cm[0,0]/(cm[0,0] + cm[0, 1]))
-        #rvec.append(cm[0,0]/(cm[0,0] + cm[1, 0]))
         
         test_loss_vec.append(test[0])
         test_acc_vec.append(test[1])
@@ -112,20 +106,27 @@ def train_model(X, Y):
     
     return sum(test_loss_vec)/len(test_loss_vec), sum(test_acc_vec)/len(test_acc_vec), sum(train_loss_vec)/len(train_loss_vec), sum(train_acc_vec)/len(train_acc_vec)#, sum(rvec)/len(rvec)
 
+#ml_vars = shuffle(pd.read_pickle(directory + 'selected_ml_data.pkl'), random_state=0)
+
 ml_vars = pd.read_pickle(directory + 'selected_ml_data.pkl')
 
 train_loss_vec = []
 train_acc_vec = []
 test_loss_vec = []
 test_acc_vec = []
-rvec = []
 
-for i in range(10, 21, 10):
+#random.seed(30)
+
+for i in range(11, len(ml_vars)+1, 5):
     
-    ml_vars = ml_vars.head(i)
+    randlist= [random.randint(0, len(ml_vars)-1) for x in range(0, i)]
+    
+    ml_vars_ss = ml_vars.iloc[randlist]
+    
+    #ml_vars_ss = ml_vars.head(i)
 
-    Y = ml_vars.iloc[:, 2]
-    X = ml_vars.iloc[:, 3:]
+    Y = ml_vars_ss.iloc[:, 2]
+    X = ml_vars_ss.iloc[:, 3:]
 
     X['episode_length'] =  X['episode_length'].fillna(X['episode_length'].mean()) 
 
@@ -133,19 +134,33 @@ for i in range(10, 21, 10):
     
     test_loss, test_acc, train_loss, train_acc = train_model(X, Y)
     
-    test_loss_vec = train_loss_vec.append(test_loss)
-    test_acc_vec = train_loss_vec.append(test_acc)
-    train_loss_vec = train_loss_vec.append(train_loss)
-    train_acc_vec = train_loss_vec.append(test_loss)
-    #r_vec = train_loss_vec.append(r)
+    test_loss_vec.append(test_loss)
+    test_acc_vec.append(test_acc)
+    train_loss_vec.append(train_loss)
+    train_acc_vec.append(train_acc)
     
 # summarize history for loss
-plt.plot(test_loss_vec)
-plt.plot(train_loss_vec)
+
+test_loss_df = pd.Series(test_loss_vec, index = range(11, len(ml_vars)+1, 5))
+train_loss_df = pd.Series(train_loss_vec, index = range(11, len(ml_vars)+1, 5))
+
+plt.plot(test_loss_df)
+plt.plot(train_loss_df)
 plt.title('model loss')
 plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
+plt.xlabel('sample size')
+plt.legend(['train', 'test'], loc='upper right')
 plt.show()
-    
 
+#summarize history for accuracy
+
+test_acc_df = pd.Series(test_acc_vec, index = range(11, len(ml_vars)+1, 5))
+train_acc_df = pd.Series(train_acc_vec, index = range(11, len(ml_vars)+1, 5))
+
+plt.plot(test_acc_df)
+plt.plot(train_acc_df)
+plt.title('model acc')
+plt.ylabel('acc')
+plt.xlabel('sample size')
+plt.legend(['train', 'test'], loc='upper right')
+plt.show()

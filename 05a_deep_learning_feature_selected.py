@@ -123,3 +123,77 @@ cm= confusion_matrix(Y_test, Y_predict)
 p = cm[0,0]/(cm[0,0] + cm[0, 1])
 r = cm[0,0]/(cm[0,0] + cm[1, 0])
 
+#Cross validation
+
+def train_model(params):
+    
+    from keras.models import Sequential
+    from keras.layers import Dense, Dropout
+    from keras import callbacks 
+    from keras.callbacks import LearningRateScheduler
+    from tensorflow.keras import regularizers
+    
+    nodes1, nodes2, dp1, dp2, reg1, reg2 = params
+
+    model = Sequential()
+    
+    model.add(Dense(nodes1,
+                input_shape = (188,),
+                activation = 'relu',
+                kernel_initializer = 'RandomNormal',
+                activity_regularizer = regularizers.l2(reg1))
+          )
+
+    model.add(Dropout(dp1))
+
+    model.add(Dense(nodes2,
+                activation = 'relu',
+                kernel_initializer = 'RandomNormal',
+                activity_regularizer = regularizers.l2(reg2))
+          )
+
+    model.add(Dropout(dp2))
+
+    model.add(Dense(1,
+                activation = 'sigmoid'))
+    
+    model.compile(optimizer = 'adam',
+              loss = 'binary_crossentropy',
+              metrics = ['accuracy']
+              )
+    
+    earlystopping = callbacks.EarlyStopping(monitor ="val_loss",  
+                                        mode ="min", patience = 30,
+                                        restore_best_weights = True) 
+    
+    loss_vec = []
+    acc_vec = []
+    pvec = []
+    rvec = []
+    
+    for i in range (0, 10):
+        
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2, random_state = 1234 + i*10, stratify = Y)
+        
+        
+        model.fit(X_train, Y_train, validation_data = [X_test, Y_test], epochs = 200, batch_size = 32,\
+                    callbacks =[earlystopping, LearningRateScheduler(lr_scheduler, verbose=1)])
+
+        test = model.evaluate(X_test, Y_test)
+        
+        
+        Y_predict = model.predict_classes(X_test)
+        cm = confusion_matrix(Y_test, Y_predict)
+
+        pvec.append(cm[0,0]/(cm[0,0] + cm[0, 1]))
+        rvec.append(cm[0,0]/(cm[0,0] + cm[1, 0]))
+        
+        loss_vec.append(test[0])
+        acc_vec.append(test[1])
+        
+    
+    return loss_vec, acc_vec
+
+test = train_model([50,50, 0.2, 0.2, 1e-4, 1e-6])
+
+mean_vals = [sum(x)/len(x) for x in test]
