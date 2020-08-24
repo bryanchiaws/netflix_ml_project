@@ -16,22 +16,25 @@ directory = '/Users/bryanchia/Desktop/projects/netflix_ml_project/clean_data/'
 
 #ML Dataset
 
-ml_vars = pd.read_pickle(directory + 'selected_ml_data.pkl')
+ml_vars = pd.read_pickle(directory + 'bryan_viewing/selected_ml_data.pkl')
 
 watched_list = ml_vars['Title'].unique()
 
 x_vars= ml_vars.iloc[:, 3:].columns
 
-genre_vars = [str.replace(x, 'Genre_', '') for x in x_vars if 'Genre' in x]
+genre_vars = [x for x in x_vars if 'Genre' in x]
 
-tag_vars = [str.replace(x, 'Tag_', '') for x in x_vars if 'Tag' in x]
+tag_vars = [x for x in x_vars if 'Tag' in x]
 
 #Merge on characterisitcs
 
-with open(directory + 'show_chars_full.pkl', 'rb') as f:
+with open(directory + 'netflix_data/show_chars_full.pkl', 'rb') as f:
     df_vars = pickle.load(f)
-
-df_vars = df_vars[~df_vars['Title'].isin(ml_vars['Title'])]
+    
+df_vars['Total Seasons'] = [*map(lambda x: str(x).split('.E', -1)[0].split('S', -1)[1] if ('S' in str(x))\
+                                               else x, df_vars['Total Seasons'])]
+    
+df_vars['Total Seasons'] = [1 if x == 'Unknown' else int(x) for x in df_vars['Total Seasons']]
 
 #Create list of characteristics
 
@@ -47,16 +50,18 @@ df_genre_long = df_genre.join(s, how = 'right').drop('Genre', axis = 1).reset_in
 
 df_genre_long = df_genre_long[df_genre_long['Genres'].str.contains('20|19') == False]
 
-df_genre_long = df_genre_long[df_genre_long['Genres'].isin(genre_vars)]
-
 df_genre_long.to_pickle(directory + 'netflix_data/show_genres_stack_full.pkl')
+
+genre_dummies = pd.get_dummies(df_genre_long, prefix = 'Genre', columns = ['Genres']).groupby('Title').sum()
+
+#Filter only to genres in the data
+genre_dummies = genre_dummies[genre_vars]
 
 #Create list of tags
 
-with open(directory + "show_tags_full.pkl", "rb") as f:
+with open(directory + "netflix_data/show_tags_full.pkl", "rb") as f:
     df_tags = pickle.load(f)
     
-
 df_tags = df_tags[df_tags['Title'] != 'American Crime'].reset_index(drop = True)
 
 s = pd.DataFrame([pd.Series(x)for x in df_tags['Tags']]).stack().reset_index(level = 1, drop = True) 
@@ -65,11 +70,12 @@ s.name = 'Tag'
 
 df_tags_long = df_tags.join(s, how =  'right' ).drop('Tags', axis = 1).reset_index(drop = True)
 
-df_tags_long = df_tags_long[~df_tags_long['Title'].isin(ml_vars['Title'])]
-
-df_tags_long = df_tags_long[df_tags_long['Tag'].isin(tag_vars)]
-
 df_tags_long.to_pickle(directory + 'netflix_data/show_tags_stack_full.pkl')
+
+tag_dummies = pd.get_dummies(df_tags_long, prefix = 'Tag', columns = ['Tag']).groupby('Title').sum()
+
+#Filter only to tags in the data
+tag_dummies = tag_dummies[tag_vars]
 
 #Mimic ML Datasets
 
@@ -86,11 +92,11 @@ df_index['Total Seasons'] = df_index['Total Seasons'].apply(int)
 
 df_index = df_index[df_index['season_num'] <= df_index['Total Seasons']]
 
-genre_dummies = pd.get_dummies(df_genre_long, prefix = 'Genre', columns = ['Genres']).groupby('Title').sum()
-
-tag_dummies = pd.get_dummies(df_tags_long, prefix = 'Tag', columns = ['Tag']).groupby('Title').sum()
 
 X_vars_fp = pd.merge(pd.merge(df_index, genre_dummies, how = "left", left_on = 'Title', right_on = 'Title'), \
                      tag_dummies, how = "left", left_on = 'Title', right_on = 'Title')
+    
+#Filter out what I have already watched
+df_genre_long = df_genre_long[~df_genre_long['Title'].isin(ml_vars['Title'])]
     
 X_vars_fp.iloc[2:] = X_vars_fp.iloc[2:].reindex(columns = x_vars)

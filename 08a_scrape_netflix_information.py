@@ -132,15 +132,15 @@ for i in unique_shows:
 df_show_chars = pd.DataFrame(list(zip(show_title, show_rating, show_length, show_genre, show_episodes, show_seasons)), 
                columns =['Title', 'Rating', 'Length', 'Genre', 'Episodes', 'Total Seasons']) 
 
-df_show_chars.to_pickle(directory + '/netflix_data/show_chars_full.pkl')
+df_show_chars.to_pickle(directory + 'clean_data/netflix_data/show_chars_full.pkl')
 
 df_show_actors = pd.DataFrame(list(zip(show_title, show_actors)), 
                columns =['Title', 'Actors']) 
 
-df_show_actors.to_pickle(directory + '/netflix_data/show_actors_full.pkl')
+df_show_actors.to_pickle(directory + 'clean_data/netflix_data/show_actors_full.pkl')
 
 df_show_creators = pd.DataFrame(list(zip(show_title, show_creators)), 
                columns =['Title', 'Creators']) 
 
-df_show_creators.to_pickle(directory + '/netflix_data/show_creators_full.pkl')
+df_show_creators.to_pickle(directory + 'clean_data/netflix_data/show_creators_full.pkl')
 
