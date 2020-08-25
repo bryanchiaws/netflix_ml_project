@@ -19,10 +19,11 @@ from sklearn.utils import shuffle
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from tensorflow.keras import regularizers
+import pickle5 as pickle
 
 directory = '/Users/bryanchia/Desktop/projects/netflix_ml_project/clean_data/'
 
-ml_vars = pd.read_pickle(directory + 'selected_ml_data.pkl')
+ml_vars = pd.read_pickle(directory + 'bryan_viewing/selected_ml_data.pkl')
 
 Y = ml_vars.iloc[:, 2]
 X = ml_vars.iloc[:, 3:]
@@ -91,10 +92,20 @@ history = model.fit(X_train, Y_train, validation_data = [X_test, Y_test], epochs
 accuracy_test = model.evaluate(X_test, Y_test)
 
 
+#Bring in prediction possibilities
+
+with open(directory + 'netflix_data/full_potential_predictions.pkl', 'rb') as f:
+    potentials = pickle.load(f)
+
 #Get the predicted values and predicted probabilities of Y test
-Y_pred_prob = model.predict(X_test)
+
+potentials['episode_length'] =  potentials['episode_length'].fillna(potentials['episode_length'].mean()) 
+
+potentials.iloc[:, 2:] = potentials.iloc[:, 2:].fillna(0) 
+
+Y_pred_prob = model.predict(potentials.iloc[:,1:])
 Y_predict = pd.Series([1 if x >0.5 else 0 for x in Y_pred_prob])
 
-Y_predictions = pd.merge(pd.merge(pd.merge(ml_vars[['Title', 'Season']], Y_test, how = "right", left_index = True, right_index = True).reset_index(drop = True),\
+Y_predictions = pd.merge(pd.merge(potentials[['Title', 'season_num']], 
                          pd.DataFrame(Y_pred_prob, columns = ['percentage']), how = "right", left_index = True, right_index = True),\
                          pd.DataFrame(Y_predict, columns = ['prediction']), how = "right", left_index = True, right_index = True)

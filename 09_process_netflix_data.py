@@ -74,12 +74,37 @@ df_tags_long.to_pickle(directory + 'netflix_data/show_tags_stack_full.pkl')
 
 tag_dummies = pd.get_dummies(df_tags_long, prefix = 'Tag', columns = ['Tag']).groupby('Title').sum()
 
+tag_dummies['Tag_cakes'] = 0
+tag_dummies['Tag_financial ruin'] = 0
+tag_dummies['Tag_catfishing'] = 0
+
 #Filter only to tags in the data
 tag_dummies = tag_dummies[tag_vars]
 
 #Mimic ML Datasets
 
-df_seasons = df_vars[['Title', 'Total Seasons']]
+def convert_minutes(x):
+    
+    x = str(x)
+    
+    if x == '':
+        return np.nan
+    elif ('h' in x) & ('min' not in x):
+        return pd.to_numeric(x.split('h', -1)[0])*60.0
+    elif ('h' not in x) & ('min' in x):
+        return pd.to_numeric(x.split('min', -1)[0])*1.0
+    elif ('h' in x) & ('min' in x):
+        return pd.to_numeric(x.split('h', -1)[0])*60.0 + pd.to_numeric(x.split('h', -1)[1].split('min', -1)[0])
+
+df_vars['episode_length'] = [convert_minutes(x) for x in df_vars['Length']]
+
+df_vars['num_episodes'] = pd.to_numeric([str(x).split('episodes', -1)[0] if str(x).find('episodes') != -1\
+                                          else 1 for x in df_vars['Episodes']])
+
+#Account for some mistakes in episode length
+df_vars['episode_length'] = [x/y if x > 130 else x for x, y in zip(df_vars['episode_length'], df_vars['num_episodes'])]
+    
+df_seasons = df_vars[['Title', 'Total Seasons', 'episode_length']]
 
 index = pd.DataFrame(range(1, max([int(x) for x in df_seasons['Total Seasons']])), columns = ['season_num'])
 
@@ -92,11 +117,16 @@ df_index['Total Seasons'] = df_index['Total Seasons'].apply(int)
 
 df_index = df_index[df_index['season_num'] <= df_index['Total Seasons']]
 
-
 X_vars_fp = pd.merge(pd.merge(df_index, genre_dummies, how = "left", left_on = 'Title', right_on = 'Title'), \
                      tag_dummies, how = "left", left_on = 'Title', right_on = 'Title')
     
 #Filter out what I have already watched
-df_genre_long = df_genre_long[~df_genre_long['Title'].isin(ml_vars['Title'])]
+potential_predictors  = X_vars_fp[~ X_vars_fp['Title'].str.lower().isin(ml_vars['Title'].str.lower())]
+
+#Will definitely not watch animation
+potential_predictors  = potential_predictors[potential_predictors['Genre_Animation'] == 0]
+
+pp_final = pd.merge(potential_predictors['Title'], \
+                    potential_predictors[x_vars], how = "right", left_index = True, right_index = True).reset_index(drop = True)
     
-X_vars_fp.iloc[2:] = X_vars_fp.iloc[2:].reindex(columns = x_vars)
+pp_final.to_pickle(directory + 'netflix_data/full_potential_predictions.pkl')
