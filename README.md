@@ -20,3 +20,5 @@ Machine Learning Project - using neural networks to predict shows that I will li
 09 - Process and clean Netflix data
 
 10 - Using X values generated in 09, predict probabilities of finishing each Netflix shows based on parameters derived in 07
+
+Results available in 'final_predictions.xlsx'.
