@@ -109,3 +109,7 @@ Y_predict = pd.Series([1 if x >0.5 else 0 for x in Y_pred_prob])
 Y_predictions = pd.merge(pd.merge(potentials[['Title', 'season_num']], 
                          pd.DataFrame(Y_pred_prob, columns = ['percentage']), how = "right", left_index = True, right_index = True),\
                          pd.DataFrame(Y_predict, columns = ['prediction']), how = "right", left_index = True, right_index = True)
+    
+final_predictions = Y_predictions[Y_predictions['season_num'] == 1 ].drop_duplicates().sort_values('percentage', ascending = False)
+
+final_predictions.to_excel(directory +  'final_predictions.xlsx')
