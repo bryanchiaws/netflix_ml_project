@@ -12,7 +12,7 @@ import numpy as np
 import string 
 import pickle5 as pickle
 
-directory = '/Users/bryanchia/Desktop/projects/netflix_ml_project/clean_data/'
+directory = '/Users/bryanchia/Desktop/projects/netflix_ml_project/clean_data/bryan_viewing/'
 
 with open(directory + 'show_data.pkl', 'rb') as f:
     df_vd = pickle.load(f)
