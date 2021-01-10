@@ -10,6 +10,8 @@ import pandas as pd
 from datetime import datetime as dt
 import re
 
+#read files
+
 directory = '/Users/bryanchia/Desktop/projects/netflix_ml_project/'
 
 file = 'raw_data/bryan_viewing.csv'
